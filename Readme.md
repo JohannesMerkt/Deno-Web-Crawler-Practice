@@ -1,6 +1,6 @@
-# Practice Implementing a Web Server
+# Practice Implementing a basic Web Crawler
 
-I wanted to use Deno which is fairly new and figure out how to build a webserver with it. Its a secure javascript/typescript runtime aiming to fix all issues nodejs has. See: https://deno.land
+I wanted to use Deno which is fairly new. Its a secure javascript/typescript runtime aiming to fix all issues nodejs has. See: https://deno.land
 
 ## Running the script
 
@@ -12,7 +12,7 @@ Run the script with:
 deno run --allow-net mod.ts
 ```
 
-This script allows optional options for the port and a blacklist of IPs. For more information on them run the script with the help flag:
+This script allows optional options for the interval in seconds of website checks and the url to crawl. For more information on them run the script with the help flag:
 
 ```
 deno run --allow-net mod.ts --help
@@ -21,5 +21,5 @@ deno run --allow-net mod.ts --help
 or here is an example too:
 
 ```
-deno run --allow-net mod.ts --port 3001 --blacklist "192.168.178.1,192.168.178.44"
+deno run --allow-net mod.ts --interval 30 --url "https://ubicomp.net/sw/task1.php"
 ```

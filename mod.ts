@@ -15,7 +15,7 @@ const parser = args
         return Deno.exit(0);
     }}))
     .with(PartialOption("interval", {type: Integer, alias: ["i"], describe: "time in seconds between checks", default: 30}))
-    .with(PartialOption("port",{ type: Integer, alias: ['p'], describe: "Set the webserver port", default: 3000}));
+    .with(PartialOption("url",{ type: Text, alias: ['u'], describe: "Set the url to crawl", default: "https://ubicomp.net/sw/task1.php"}));
 
 // parse arguments
 const runArgs = parser.parse(Deno.args);
@@ -26,11 +26,11 @@ if(runArgs.tag === PARSE_FAILURE) {
     console.error(runArgs.error.toString());
     Deno.exit(1);
 } else {
-    const { port, interval } = runArgs.value;
+    const { url, interval } = runArgs.value;
     var previousResponse: string | undefined = undefined;
 
     setInterval(()=> {
-        const siteContents = fetch("https://ubicomp.net/sw/task1.php");
+        const siteContents = fetch(url);
 
         siteContents.then((response) => {
             return response.text();
