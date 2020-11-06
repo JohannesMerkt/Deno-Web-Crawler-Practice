@@ -29,21 +29,28 @@ if(runArgs.tag === PARSE_FAILURE) {
     const { url, interval } = runArgs.value;
     var previousResponse: string | undefined = undefined;
 
+    // start the interval for regular requests to the site
     setInterval(()=> {
+        // fetch the site
         const siteContents = fetch(url);
 
+        //process the site content
         siteContents.then((response) => {
             return response.text();
         }).then((textData) => {
+            // use my custom html parser to generate a md format file
             var newResponse = htmlToMdFormat(textData);
             if(previousResponse!==undefined) {
+                // compare previous with new response
                 const diff = Diff.diffLines(previousResponse,newResponse);
                 var result = "";
-                var changedLines = 0;
+                var changedLines = 0; 
                 diff.forEach((part: any) => {
+                    // count changed lines
                     if(part.added || part.removed) {
                         changedLines++;
                     }
+                    // generate file showing changes
                     var lines = (part.value as string).split(" \r\n");
                     lines.pop();
                     if(part.added) {
@@ -61,6 +68,7 @@ if(runArgs.tag === PARSE_FAILURE) {
                     }
                     result += lines.join(" \r\n") + "\r\n";
                 });
+                // if more than 4 lines changed save file with timestamp as name
                 if(changedLines > 4) {
                     var now =  new Date()
                     const write = writeFile("./logs/" + now.toString() + ".md", result);
@@ -115,9 +123,11 @@ function getStringfromHtmlElements(elements: HtmlElement[]) : string {
         } else {
             var childrenString: string = "";
             if(element.content) {
-                childrenString = getStringfromHtmlElements((element.content as HtmlElement[]));
+                // call same function on children of a tag
+                childrenString = getStringfromHtmlElements((element.content as HtmlElement[])); 
             }
             var lines = childrenString.split(" \r\n").filter(segment => segment !== "");
+            // what to add the the result string with different tags. now only h1 and br
             switch(element.type) {
                 case "br":
                     result +=" \r\n\r\n";
@@ -143,11 +153,15 @@ function getStringfromHtmlElements(elements: HtmlElement[]) : string {
 
 // a function that parses a html string into a json hierachy
 function parseHTML(html: string): HtmlElement[] {
+    // first split the string with < and > as separator to get tag and text segments
     const firstSplit = html.split("<").filter(segment => segment !== "");
     var htmlElements: HtmlSegment[] = [];
     firstSplit.forEach((segment) => {
         var secondSplit = segment.split(">").filter(segment => segment !== "");
         secondSplit.forEach((segment2,id) => {
+            // first segment always is a tag! the remaining segments are text
+            // now take these segments and translate them into a object repesentation 
+            // also clean up tag segments parsing attributes and removing leading or ending frowardslashes
             htmlElements.push(getHtmlSegment(segment2,id === 0));
         });
     });
@@ -158,15 +172,17 @@ function parseHTML(html: string): HtmlElement[] {
 function getHtmlSegment(segment: string, isTag: Boolean): HtmlSegment {
     if(isTag) {
         var tagOnly = segment;
+        // remove forwardslashes
         if(segment.startsWith("/")) {
             tagOnly = segment.substring(1);
         }
         if(segment.endsWith("/")) {
             tagOnly = segment.slice(0,-1);
         }
+        // parse attributes
         var tagSegments = tagOnly.split(" ");
         var attributes: HtmlAttribute[] = [];
-        tagOnly = tagSegments.shift()!.toLowerCase();
+        tagOnly = tagSegments.shift()!.toLowerCase(); // first tagsegment always is the tag
         tagSegments.forEach(rawAttribute => {
             var attrSplit = rawAttribute.split('="',2);
             if(attrSplit.length>1) {
@@ -175,10 +191,7 @@ function getHtmlSegment(segment: string, isTag: Boolean): HtmlSegment {
                 attributes.push({type: rawAttribute});
             }
         });
-        var result: HtmlSegment = {type: tagOnly, opening: isOpeningTag(segment), solo: isSoloTag(segment)};
-        if(attributes.length > 0) {
-            result.attributes = attributes;
-        }
+        var result: HtmlSegment = {type: tagOnly, opening: isOpeningTag(segment), solo: isSoloTag(segment), attributes: attributes};
         return result;
     } else {
         return {type: "text", text: segment};
@@ -208,6 +221,7 @@ function getHTMLTag(tag: HtmlSegment,content: HtmlElement[] | undefined = undefi
 function discoverHTMLHierachy(elements:HtmlSegment[]): HtmlElement[] {
     var remaining = elements;
     var hierachy: HtmlElement[] = [];
+    // go through all tags from top to bottom and find its closing tag then call this function on children of that tag
     while(remaining.length > 0) {
         var tag = remaining.shift();
         if(tag !== undefined) {
@@ -230,8 +244,8 @@ function discoverHTMLHierachy(elements:HtmlSegment[]): HtmlElement[] {
                     console.log("couldnt find closing tag");
                 } else {
                     var innerElements = remaining.slice(0,closingTagId);
-                    hierachy.push(getHTMLTag(tag,discoverHTMLHierachy(innerElements)))
-                    remaining = remaining.slice(closingTagId+1);
+                    hierachy.push(getHTMLTag(tag,discoverHTMLHierachy(innerElements))); // find parse children hierachy
+                    remaining = remaining.slice(closingTagId+1); // remove the tag itself and the children from this iteration
                 }
             } else {
                 console.log("Ran into closing tag with no opening tag " + tag);
